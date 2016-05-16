@@ -33,7 +33,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
 from shadowsocks import utils, daemon, encrypt, eventloop, tcprelay, udprelay,\
     asyncdns
 
-# local is the local proxy
+# Local is the local proxy
 def main():
     utils.check_python()
 
