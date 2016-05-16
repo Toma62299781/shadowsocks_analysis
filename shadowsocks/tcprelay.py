@@ -492,7 +492,7 @@ class TCPRelayHandler(object):
         # order is important
         if sock == self._remote_sock:
             if event & eventloop.POLL_ERR:
-                # remote就是墙外的服务器
+                # remote is the server outside the firewall
                 self._on_remote_error()
                 if self._stage == STAGE_DESTROYED:
                     return
@@ -504,7 +504,7 @@ class TCPRelayHandler(object):
                 self._on_remote_write()
         elif sock == self._local_sock:
             if event & eventloop.POLL_ERR:
-                # local就是我们墙内的proxy
+                # local is the proxy inside the firewall
                 self._on_local_error()
                 if self._stage == STAGE_DESTROYED:
                     return
@@ -667,7 +667,7 @@ class TCPRelay(object):
                 pos = 0
             self._timeout_offset = pos
 
-    # 处理从dest传回到远程的消息
+    # handle the data transmitted from dest to remote server
     def _handle_events(self, events):
         # handle events and dispatch to handlers
         for sock, fd, event in events:
@@ -681,7 +681,7 @@ class TCPRelay(object):
                 try:
                     logging.debug('accept')
                     conn = self._server_socket.accept()
-                    # 创建一个新的连接，并且新建一个TCPRelayHandler处理
+                    # Create a new connection，then create a new TCPRelayHandler to handle it.
                     TCPRelayHandler(self, self._fd_to_handlers,
                                     self._eventloop, conn[0], self._config,
                                     self._dns_resolver, self._is_local)
@@ -697,9 +697,11 @@ class TCPRelay(object):
             else:
                 if sock:
                     # 如果是已经accept的连接，就找相对应的handler处理它
+                    # if this connect has been accepted, find the corresponding handler to handle it.
                     handler = self._fd_to_handlers.get(fd, None)
                     if handler:
                         # 这里调用handler里面的handle_event来处理事件
+                        # Use the handle_event in handler to handle the event
                         handler.handle_event(sock, event)
                 else:
                     logging.warn('poll removed fd')

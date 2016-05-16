@@ -28,9 +28,8 @@ import sys
 import hashlib
 import logging
 
-from shadowsocks.crypto import m2, rc4_md5, salsa20_ctr,\
+from shadowsocks.crypto import m2, rc4_md5, salsa20_ctr, \
     ctypes_openssl, ctypes_libsodium, table
-
 
 method_supported = {}
 method_supported.update(rc4_md5.ciphers)
@@ -58,7 +57,7 @@ def try_cipher(key, method=None):
 
 
 def EVP_BytesToKey(password, key_len, iv_len):
-    # equivalent to OpenSSL's EVP_BytesToKey() with count 1
+    # Equivalent to OpenSSL's EVP_BytesToKey() with count 1
     # so that we make the same key and iv as nodejs version
     if hasattr(password, 'encode'):
         password = password.encode('utf-8')
@@ -120,7 +119,7 @@ class Encryptor(object):
 
         iv = iv[:m[1]]
         if op == 1:
-            # this iv is for cipher not decipher
+            # This iv is for cipher not decipher
             self.cipher_iv = iv[:m[1]]
         return m[2](method, key, iv, op)
 
@@ -146,8 +145,9 @@ class Encryptor(object):
                 return buf
         return self.decipher.update(buf)
 
-# 加密解密同在一个函数
-# 0解码，1加密
+
+# Decrypt and Encrypt will use the same function
+# 0 to Decrypt and 1 to Encrypt
 def encrypt_all(password, method, op, data):
     result = []
     method = method.lower()

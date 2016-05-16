@@ -31,7 +31,7 @@ import struct
 import re
 import logging
 
-import common, lru_cache, eventloop
+from shadowsocks import common, lru_cache, eventloop
 
 
 CACHE_SWEEP_INTERVAL = 30
@@ -326,7 +326,7 @@ class DNSResolver(object):
         except IOError:
             pass
         if not self._servers:
-            # 没有自定义的，就用谷歌的
+            # If there is no server defined, the servers from Google will be used.
             self._servers = ['8.8.4.4', '8.8.8.8']
 
     # 自定义的域名解析
@@ -363,7 +363,7 @@ class DNSResolver(object):
         # 这里加入了handler，eventloop检测到socket有“动静”时调用self.handle_events
         loop.add_handler(self.handle_events, ref=ref)
 
-    # 这里触发回调
+    # This method will trigger callback
     def _call_callback(self, hostname, ip, error=None):
         # 这里取出我们在请求的同时放进字典里面的callback函数
         # cb = callback
@@ -412,11 +412,11 @@ class DNSResolver(object):
 
     def handle_events(self, events):
         for sock, fd, event in events:
-            # 看是不是自己socket的，因为dns，tcp，udp的server都分别有自己的socket
+            # Check whether the socket is from itself，because dns, udp, tcp server will all have its own socket
             if sock != self._sock:
                 continue
             if event & eventloop.POLL_ERR:
-                # 出错了的话重启
+                # Restart if there is an error
                 logging.error('dns socket err')
                 self._loop.remove(self._sock)
                 self._sock.close()

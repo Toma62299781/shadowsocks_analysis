@@ -109,7 +109,7 @@ def daemon_start(pid_file, log_file):
     signal.signal(signal.SIGINT, handle_exit)
     signal.signal(signal.SIGTERM, handle_exit)
 
-    # fork only once because we are sure parent will exit
+    # Fork only once because we are sure parent will exit
     pid = os.fork()
     assert pid != -1
 
@@ -118,7 +118,7 @@ def daemon_start(pid_file, log_file):
         time.sleep(5)
         sys.exit(0)
 
-    # child signals its parent to exit
+    # Child signals its parent to exit
     ppid = os.getppid()
     pid = os.getpid()
     if write_pid_file(pid_file, pid) != 0:

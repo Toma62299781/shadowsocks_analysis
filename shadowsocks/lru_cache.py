@@ -29,14 +29,13 @@ import logging
 import time
 
 
-# this LRUCache is optimized for concurrency, not QPS
+# This LRUCache is optimized for concurrency, not QPS
 # n: concurrency, keys stored in the cache
 # m: visits not timed out, proportional to QPS * timeout
 # get & set is O(1), not O(n). thus we can support very large n
 # TODO: if timeout or QPS is too large, then this cache is not very efficient,
 #       as sweep() causes long pause
 
-# 作者对于每个步骤的耗费都有考虑
 
 # 用到了容器基类
 class LRUCache(collections.MutableMapping):
@@ -81,7 +80,9 @@ class LRUCache(collections.MutableMapping):
 
 
 # 先找访问时间_last_visits中超出timeout的所有键
+# Firstly, find all the keys that exceeds timeout in the _last_visits
 # 然后去找_time_to_keys，找出所有可能过期的键
+# Then find all the keys that may timeout in _time_to_keys
 # 因为最早访问时间访问过的键之后可能又访问了，所以要看_keys_to_last_time
 # 找出那些没被访问过的，然后删除
 
