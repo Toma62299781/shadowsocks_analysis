@@ -21,9 +21,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# SOCKS5是基于UDP的，所以有这个UDPrelay，用来返回给browser的报文??
+# SOCKS5 is based on UDP，so here invent the UDPrelay，use it to return the data to browser
 
 # SOCKS5用于browser和proxy协商用
+
 # SOCKS5 UDP Request
 # +----+------+------+----------+----------+----------+
 # |RSV | FRAG | ATYP | DST.ADDR | DST.PORT |   DATA   |
@@ -94,6 +95,7 @@ class UDPRelay(object):
     def __init__(self, config, dns_resolver, is_local):
         self._config = config
         # 本地和远程采用同一份config文件，所以要区分
+        # Local and server will use the same config, so it needs to make it clear.
         if is_local:
             self._listen_addr = config['local_address']
             self._listen_port = config['local_port']
@@ -126,7 +128,7 @@ class UDPRelay(object):
         af, socktype, proto, canonname, sa = addrs[0]
         server_socket = socket.socket(af, socktype, proto)
 
-        # server_socket是自己的socket
+        # server_socket will use its own socket
         server_socket.bind((self._listen_addr, self._listen_port))
         server_socket.setblocking(False)
         self._server_socket = server_socket
@@ -150,6 +152,7 @@ class UDPRelay(object):
             pass
 
     # 发到自己bind的端口的udp请求
+    # Send
     # 就只有可能是对方主动发送过来的，自己发送出去的udp请求要新建一个socket用来处理之后的请求
     def _handle_server(self):
         server = self._server_socket
@@ -157,7 +160,7 @@ class UDPRelay(object):
         if not data:
             logging.debug('UDP handle_server: data is empty')
         if self._is_local:
-            # 如果是local收到，那就是
+            # if local receives this request, then:
             frag = common.ord(data[2])
 # this is no classic UDP
 # +----+------+------+----------+----------+----------+
@@ -170,7 +173,7 @@ class UDPRelay(object):
                 return
             else:
                 data = data[3:]
-                # [3:]之后变成
+                # after [3:]
 # +------+----------+----------+----------+
 # | ATYP | DST.ADDR | DST.PORT |   DATA   |
 # +------+----------+----------+----------+
@@ -178,9 +181,9 @@ class UDPRelay(object):
 # +------+----------+----------+----------+
 # 就是shadowsocks那段
         else:
-            # 如果是远程收到
+            # If remote receives
             data = encrypt.encrypt_all(self._password, self._method, 0, data)
-            # decrypt data
+            # decrypt the data
             if not data:
                 logging.debug('UDP handle_server: data is empty after decrypt')
                 return
@@ -231,7 +234,7 @@ class UDPRelay(object):
         if not data:
             return
         try:
-            # 发送，完美无瑕。。。。
+            # Send the data
             # 这个sendto同时有udp的和tcp的两种，sendto函数主要用于UDP，但这里两种都用了
             client.sendto(data, (server_addr, server_port))
         except IOError as e:
@@ -241,27 +244,27 @@ class UDPRelay(object):
             else:
                 logging.error(e)
 
-    # 对于local，得到的是远程的相应，要往客户端发
-    # 对于远程，得到的是dest的响应，要往local发
+    # The local will get the response from server, then send it to client
+    # The server will get the response from dest, then send it to local
     def _handle_client(self, sock):
         data, r_addr = sock.recvfrom(BUF_SIZE)
         if not data:
             logging.debug('UDP handle_client: data is empty')
             return
-        # 如果是远程
+        # If it is from remote
         if not self._is_local:
             addrlen = len(r_addr[0])
             if addrlen > 255:
                 # drop
                 return
             data = pack_addr(r_addr[0]) + struct.pack('>H', r_addr[1]) + data
-            # 加密内容
+            # Encrypt the data
             response = encrypt.encrypt_all(self._password, self._method, 1,
                                            data)
             if not response:
                 return
         else:
-            # 解密
+            # Decrypt the data
             data = encrypt.encrypt_all(self._password, self._method, 0,
                                        data)
             if not data:
@@ -273,6 +276,8 @@ class UDPRelay(object):
             response = b'\x00\x00\x00' + data
 
 # 两个报文差3个字节的数据怎么办？加上去！客户端是有构造和识别SOCK5报文的能力的
+# If the the message lost 3 bytes data, the client will add it.
+# Because the client has the ability to recognize and construct SOCKS5 message
 # +----+------+------+----------+----------+----------+
 # |RSV | FRAG | ATYP | DST.ADDR | DST.PORT |   DATA   |
 # +----+------+------+----------+----------+----------+
@@ -284,10 +289,9 @@ class UDPRelay(object):
 # |  1   | Variable |    2     | Variable |
 # +------+----------+----------+----------+
 
-            # 这里是真正的数据 
+            # Here is the real data
         client_addr = self._client_fd_to_server_addr.get(sock.fileno())
         if client_addr:
-            # 同样的，完美无瑕。。
             self._server_socket.sendto(response, client_addr)
         else:
             # this packet is from somewhere else we know
@@ -311,13 +315,13 @@ class UDPRelay(object):
             if sock == self._server_socket:
                 if event & eventloop.POLL_ERR:
                     logging.error('UDP server_socket err')
-                # 处理来自server的udp消息
+                # Handle the udp message from server
                 self._handle_server()
-            # shadowsocks可以给很多人用，所以可以有很多client socket
+            # Shadowsocks support multi user mode，so there could be more than one client socket
             elif sock and (fd in self._sockets):
                 if event & eventloop.POLL_ERR:
                     logging.error('UDP client_socket err')
-                # 处理来自client的udp请求
+                # Handle the udp request from client
                 self._handle_client(sock)
 
         now = time.time()

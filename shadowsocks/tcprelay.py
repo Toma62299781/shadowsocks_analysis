@@ -48,7 +48,7 @@ CMD_CONNECT = 1
 CMD_BIND = 2
 CMD_UDP_ASSOCIATE = 3
 
-# handler放在我们自己的服务器
+# Put handler in our own server
 
 # TCP Relay can be either sslocal or ssserver
 # for sslocal it is called is_local=True
@@ -314,7 +314,7 @@ class TCPRelayHandler(object):
                 self._data_to_write_to_remote.append(data_to_send)
                 # notice here may go into _handle_dns_resolved directly
 
-                # 这里调用dns_server的resolve，dns_server可以作为一个可移植的模块了
+                # Here uses the resolve in dns_server, dns_server could perform like a portable module
                 self._dns_resolver.resolve(self._chosen_server[0],
                                            self._handle_dns_resolved)
             else:
@@ -605,7 +605,6 @@ class TCPRelay(object):
             raise Exception('already closed')
         self._eventloop = loop
 
-        # 这里就相比dnsserver少了一层
         loop.add_handler(self._handle_events)
 
         self._eventloop.add(self._server_socket,
@@ -696,11 +695,9 @@ class TCPRelay(object):
                             traceback.print_exc()
             else:
                 if sock:
-                    # 如果是已经accept的连接，就找相对应的handler处理它
-                    # if this connect has been accepted, find the corresponding handler to handle it.
+                    # if the connection has been accepted, find the corresponding handler to handle it.
                     handler = self._fd_to_handlers.get(fd, None)
                     if handler:
-                        # 这里调用handler里面的handle_event来处理事件
                         # Use the handle_event in handler to handle the event
                         handler.handle_event(sock, event)
                 else:

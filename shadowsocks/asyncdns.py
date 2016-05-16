@@ -57,7 +57,7 @@ common.patch_socket()
 # header
 # 
 # 
-# 这里一行16个位，就是两个字节
+# There is 16 bits in one line, which is 2 bytes
 #                                 1  1  1  1  1  1
 #   0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
 # +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
@@ -76,7 +76,7 @@ common.patch_socket()
 
 # header = struct.pack('!HBBHHHH', request_id, 1, 0, 1, 0, 0, 0)
 
-# 一个字节=8位=两个16进制数
+# 1 byte=8 bits=two number in 0x
 
 QTYPE_ANY = 255
 QTYPE_A = 1
@@ -306,7 +306,7 @@ class DNSResolver(object):
         # TODO monitor hosts change and reload hosts
         # TODO parse /etc/gai.conf and follow its rules
 
-    # DNS服务器的位置
+    # Location of the DNS server
     def _parse_resolv(self):
         self._servers = []
         try:
@@ -329,7 +329,7 @@ class DNSResolver(object):
             # If there is no server defined, the servers from Google will be used.
             self._servers = ['8.8.4.4', '8.8.8.8']
 
-    # 自定义的域名解析
+    # Self-defined host parser
     def _parse_hosts(self):
         etc_path = '/etc/hosts'
         if 'WINDIR' in os.environ:
@@ -388,7 +388,7 @@ class DNSResolver(object):
         if response and response.hostname:
             hostname = response.hostname
             ip = None
-            # 从报文里面拿到ip地址
+            # 从报文里面拿到ip地址 Get the IP address from the response
             for answer in response.answers:
                 if answer[1] in (QTYPE_A, QTYPE_AAAA) and \
                         answer[2] == QCLASS_IN:
@@ -426,13 +426,13 @@ class DNSResolver(object):
                 self._sock.setblocking(False)
                 self._loop.add(self._sock, eventloop.POLL_IN)
             else:
-                # 没出错就接受数据
-                # 因为是dns基于udp报文，所以没有连接要处理
+                # Receive data if there is no error
+                # 因为是dns基于udp报文，所以没有连接要处理 Because the dns is based on udp, so there will be no links to handle
                 data, addr = sock.recvfrom(1024)
                 if addr[0] not in self._servers:
                     logging.warn('received a packet other than our dns')
                     break
-                # handle_events调用_handle_data
+                # handle_events calls _handle_data
                 self._handle_data(data)
             break
         now = time.time()
@@ -469,26 +469,30 @@ class DNSResolver(object):
             callback(None, Exception('empty hostname'))
         elif is_ip(hostname):
             # 先看是不是一个ip，是就不同解析了，直接调用callback
+            # Check whether it is the same IP, if yes, there is no need to resolve the address, just callback
             callback((hostname, hostname), None)
         elif hostname in self._hosts:
             # 看是不是在host文件里面，是就直接callback
+            # Check whether it is in the host file, if it is, callback
             logging.debug('hit hosts: %s', hostname)
             ip = self._hosts[hostname]
             callback((hostname, ip), None)
         elif hostname in self._cache:
             # 看是不是在cache里面，是就直接callback
+            # Check whether it is in cache, if it is, callback
             logging.debug('hit cache: %s', hostname)
             ip = self._cache[hostname]
             callback((hostname, ip), None)
         else:
             if not is_valid_hostname(hostname):
-                # 如果不是正常hostname
+                # If it is not a vaild hostname, raise an error
                 callback(None, Exception('invalid hostname: %s' % hostname))
                 return
             arr = self._hostname_to_cb.get(hostname, None)
             if not arr:
                 self._hostname_status[hostname] = STATUS_IPV4
                 # 请求报文发出去
+                # Send the request
                 self._send_req(hostname, QTYPE_A)
                 # 同时在_hostname_to_cb注册一个{hostname:callback}的一对
                 # 要hostname因为这个socket可以发出去很多不同hostname的解析请求
